@@ -125,7 +125,6 @@
             border-bottom: 1px solid #d4af37; padding-bottom: 8px; width: 100%; text-align: center; letter-spacing: 2px;
         }
 
-        /* 按钮与内容样式 */
         .magic-btn {
             margin-top: auto; background: transparent; border: 1px solid #2a1d35; padding: 10px 30px;
             font-family: "Noto Serif SC", serif; font-size: 16px; color: #2a1d35; cursor: pointer;
@@ -144,11 +143,24 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        /* 白噪音模块特有样式 */
-        .noise-status {
-            font-size: 14px; margin-top: 10px; color: #666; font-style: italic; min-height: 20px;
+        /* 音乐动效：律动条 */
+        .equalizer {
+            display: flex; justify-content: center; align-items: flex-end;
+            height: 30px; gap: 4px; margin-top: 10px; opacity: 0; transition: opacity 0.5s;
         }
-        .play-icon { font-size: 20px; margin-right: 5px; vertical-align: middle; }
+        .bar {
+            width: 6px; background: #d4af37; animation: bounce 1s infinite ease-in-out;
+        }
+        .bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+        .bar:nth-child(2) { height: 20px; animation-delay: 0.3s; }
+        .bar:nth-child(3) { height: 15px; animation-delay: 0.2s; }
+        .bar:nth-child(4) { height: 25px; animation-delay: 0.4s; }
+        .bar:nth-child(5) { height: 12px; animation-delay: 0.1s; }
+
+        @keyframes bounce {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.5); }
+        }
 
         .hint {
             position: fixed; bottom: 20px; width: 100%; text-align: center;
@@ -198,58 +210,95 @@
                 <div class="front-frame">
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
                     
-                    <h2 id="noise-title">静谧雨夜</h2> <div class="art-box" style="height: 180px;">
-                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=600&auto=format&fit=crop');"></div>
+                    <h2 id="noise-title">静谧雨夜</h2>
+                    
+                    <div class="art-box" style="height: 180px;">
+                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.weserv.nl/?url=https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=600');"></div>
                     </div>
                     
-                    <div class="noise-status" id="noise-status">已暂停</div>
+                    <div class="equalizer" id="noise-eq">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
                     
-                    <audio id="audio-player" loop>
-                        <source id="audio-source" src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg" type="audio/ogg">
-                    </audio>
+                    <div style="font-size: 12px; color: #999; margin-top: 5px;">翻开自动播放 · 翻回停止</div>
 
-                    <button class="magic-btn" id="play-btn" onclick="toggleSound(event)">
-                        <span class="play-icon">▶</span> 播放 / 暂停
-                    </button>
+                    <audio id="audio-player" loop>
+                        <source id="audio-source" src="" type="audio/mpeg">
+                    </audio>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <div class="hint">点击卡片翻面刷新 · 点击按钮进行操作</div>
+    <div class="hint">点击卡片翻面刷新 · 音乐卡翻开即播</div>
 
     <script>
-        // ==================== 全局变量 ====================
-        let isPlaying = false;
-        
-        // 白噪音数据源 (Google Sounds 免费商用库)
+        // ==================== 音频与封面数据 (使用 Mixkit 稳定源) ====================
         const sounds = [
             { 
                 name: "暴雨倾盆", 
-                audio: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg", 
-                img: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=600&auto=format&fit=crop" 
+                // 使用 Mixkit 的 MP3 预览流，兼容性最好
+                audio: "https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3", 
+                // 封面图走 Weserv 代理
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=600&fit=crop" 
             },
             { 
-                name: "温暖炉火", 
-                audio: "https://actions.google.com/sounds/v1/ambiences/fireplace_sound.ogg", 
-                img: "https://images.unsplash.com/photo-1542259681-d3d5f50a4f5c?q=80&w=600&auto=format&fit=crop" 
+                name: "燃烧炉火", 
+                audio: "https://assets.mixkit.co/active_storage/sfx/86/86-preview.mp3", 
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1542259681-d3d5f50a4f5c?w=600&fit=crop" 
             },
             { 
                 name: "夏夜虫鸣", 
-                audio: "https://actions.google.com/sounds/v1/nature/crickets_in_the_night_ambience.ogg", 
-                img: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?q=80&w=600&auto=format&fit=crop" 
+                audio: "https://assets.mixkit.co/active_storage/sfx/28/28-preview.mp3", 
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=600&fit=crop" 
+            },
+            { 
+                name: "森林鸟语", 
+                audio: "https://assets.mixkit.co/active_storage/sfx/2434/2434-preview.mp3", 
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1448375240586-dfd8d395ea6c?w=600&fit=crop" 
             }
         ];
 
-        // ==================== 1. 翻牌逻辑 ====================
+        // 预加载第一个音频，防止第一次翻开没声音
+        let currentSound = sounds[0];
+        document.getElementById('audio-source').src = currentSound.audio;
+        document.getElementById('audio-player').load();
+
+        // ==================== 1. 翻牌逻辑 (核心修改) ====================
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
+            const player = document.getElementById('audio-player');
+            const eq = document.getElementById('noise-eq');
+
             if (isFlipped) {
+                // -> 准备合上
                 card.classList.remove('flipped');
-                setTimeout(() => { refreshData(type); }, 600);
+                
+                // 如果是音乐卡，合上时立刻停止播放
+                if (type === 'noise') {
+                    player.pause();
+                    eq.style.opacity = 0; // 隐藏动画
+                    // 延迟 600ms (等牌翻过去) 后刷新数据，准备下一次
+                    setTimeout(() => { refreshData(type); }, 600);
+                } else {
+                    setTimeout(() => { refreshData(type); }, 600);
+                }
+
             } else {
+                // -> 准备翻开
                 card.classList.add('flipped');
+
+                // 如果是音乐卡，翻开时尝试自动播放
+                if (type === 'noise') {
+                    // 浏览器策略要求由于用户点击(click)触发的才能播放，这里正好是onclick触发，所以可以自动播
+                    player.play().then(() => {
+                        eq.style.opacity = 1; // 显示动画
+                    }).catch(e => {
+                        console.log("自动播放被拦截，需要用户交互", e);
+                        // 如果极少数情况被拦截，可以在这里做个兜底提示
+                    });
+                }
             }
         }
 
@@ -266,47 +315,20 @@
                 fateText.style.color = "#8b0000";
             }
             else if (type === 'noise') {
-                // 1. 停止播放 (翻牌切歌)
-                const player = document.getElementById('audio-player');
-                player.pause();
-                isPlaying = false;
-                document.getElementById('play-btn').innerHTML = '<span class="play-icon">▶</span> 播放 / 暂停';
-                document.getElementById('noise-status').innerText = "已切换环境 (点击播放)";
-
-                // 2. 随机切换一个新环境
+                // 刷新音乐卡数据 (换一首歌)
                 const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
                 
-                // 3. 更新界面
+                // 更新文字和图片
                 document.getElementById('noise-title').innerText = randomSound.name;
                 document.getElementById('noise-bg').style.backgroundImage = `url('${randomSound.img}')`;
                 
-                // 4. 更新音频源
+                // 更新音频源
                 document.getElementById('audio-source').src = randomSound.audio;
-                player.load(); // 重新加载音频
+                document.getElementById('audio-player').load(); // 关键：重新加载音频资源
             }
         }
 
-        // ==================== 3. 播放控制逻辑 ====================
-        function toggleSound(e) {
-            e.stopPropagation(); // 防止翻牌
-            
-            const player = document.getElementById('audio-player');
-            const btn = document.getElementById('play-btn');
-            const status = document.getElementById('noise-status');
-
-            if (isPlaying) {
-                player.pause();
-                btn.innerHTML = '<span class="play-icon">▶</span> 播放';
-                status.innerText = "已暂停";
-            } else {
-                player.play();
-                btn.innerHTML = '<span class="play-icon">⏸</span> 暂停';
-                status.innerText = "播放中...";
-            }
-            isPlaying = !isPlaying;
-        }
-
-        // ==================== 4. 命运占卜逻辑 ====================
+        // ==================== 3. 命运占卜逻辑 ====================
         const destinyOptions = ["此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"];
         function askDestiny(e) {
             e.stopPropagation();
