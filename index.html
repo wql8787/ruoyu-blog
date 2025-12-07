@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>命运星盘</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ==================== 1. 沉浸式环境 (The Atmosphere) ==================== */
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #0f0b15;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Noto Serif SC", "Cinzel", serif;
+            overflow: hidden;
+            perspective: 1600px;
+        }
+
+        /* 动态背景：流动的星云 */
+        .nebula-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 50% 120%, rgba(100, 50, 160, 0.3) 0%, transparent 60%),
+                radial-gradient(circle at 20% 20%, rgba(200, 150, 50, 0.05) 0%, transparent 40%),
+                #0f0b15;
+            z-index: -2;
+        }
+
+        /* 悬浮微尘 */
+        .dust {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.4;
+            animation: drift 60s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+        @keyframes drift { from { background-position: 0 0; } to { background-position: 100px 100px; } }
+
+        /* ==================== 2. 水晶球核心 (The Oracle) ==================== */
+        .crystal-container {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px; height: 140px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .crystal-ball {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(138, 43, 226, 0.2) 40%, rgba(20, 0, 40, 0.6) 90%);
+            box-shadow: 
+                0 0 40px rgba(138, 43, 226, 0.4),
+                inset 0 0 20px rgba(138, 43, 226, 0.3);
+            animation: pulse 4s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        .crystal-base {
+            width: 80px; height: 20px;
+            background: linear-gradient(90deg, #3e2723, #d4af37, #3e2723);
+            border-radius: 50%;
+            margin: -10px auto 0;
+            box-shadow: 0 10px 20px black;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(138, 43, 226, 0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(138, 43, 226, 0.6); }
+        }
+
+        /* ==================== 3. 卡牌系统 (The Deck) ==================== */
+        .cards-layout {
+            display: flex;
+            gap: 40px;
+            margin-top: 100px;
+            z-index: 10;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card-wrapper {
+            width: 280px;
+            height: 460px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .card-wrapper:hover { transform: translateY(-20px); }
+        .card-wrapper.flipped { transform: rotateY(180deg); }
+        .card-wrapper.flipped:hover { transform: rotateY(180deg) translateY(-20px); }
+
+        /* 通用卡面 */
+        .face {
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 12px;
+            backface-visibility: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            overflow: hidden;
+            border: 1px solid #d4af37;
+        }
+
+        /* === 究极卡背 (暗金魔法阵) === */
+        .back {
+            background-color: #150f1f;
+            /* 复杂纹理 */
+            background-image: 
+                linear-gradient(45deg, #150f1f 75%, transparent 75%),
+                linear-gradient(135deg, #150f1f 75%, transparent 75%),
+                linear-gradient(225deg, #150f1f 75%, transparent 75%),
+                linear-gradient(315deg, #150f1f 75%, transparent 75%),
+                radial-gradient(circle, #d4af37 2px, transparent 2.5px);
+            background-size: 20px 20px, 40px 40px;
+            background-position: 0 0, 20px 20px;
+            border: 8px solid #2a1d35;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .totem {
+            width: 140px; height: 140px;
+            border: 2px solid #d4af37;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            background: #150f1f;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+        .totem::before {
+            content: ""; position: absolute; width: 100px; height: 100px;
+            border: 2px solid #d4af37; transform: rotate(45deg);
+        }
+        .totem-symbol {
+            font-size: 50px; color: #d4af37; z-index: 2;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        /* === 正面 (羊皮纸风) === */
+        .front {
+            background: #fdf6e3;
+            transform: rotateY(180deg);
+            background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+            display: flex; flex-direction: column;
+            border: 6px solid #2a1d35;
+        }
+
+        .front-frame {
+            flex: 1; margin: 6px;
+            border: 2px solid #d4af37;
+            padding: 20px; position: relative;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .ornament {
+            position: absolute; width: 20px; height: 20px;
+            border-top: 3px double #d4af37;
+            border-left: 3px double #d4af37;
+        }
+        .tl { top: 4px; left: 4px; }
+        .tr { top: 4px; right: 4px; transform: rotate(90deg); }
+        .bl { bottom: 4px; left: 4px; transform: rotate(-90deg); }
+        .br { bottom: 4px; right: 4px; transform: rotate(180deg); }
+
+        h2 {
+            font-family: "Noto Serif SC", serif;
+            font-size: 22px; margin: 10px 0; color: #2a1d35;
+            border-bottom: 1px solid #d4af37; padding-bottom: 8px;
+            width: 100%; text-align: center; letter-spacing: 2px;
+        }
+
+        /* ==================== 组件样式 ==================== */
+        .magic-btn {
+            margin-top: auto; background: transparent;
+            border: 1px solid #2a1d35; padding: 10px 30px;
+            font-family: "Noto Serif SC", serif; font-size: 16px;
+            color: #2a1d35; cursor: pointer; transition: 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .magic-btn:hover {
+            background: #2a1d35; color: #d4af37;
+            box-shadow: 0 0 15px rgba(42, 29, 53, 0.5);
+        }
+
+        .result-text {
+            font-size: 32px; font-weight: bold; color: #8b0000;
+            min-height: 80px; display: flex; align-items: center;
+            justify-content: center; text-align: center; margin-top: 40px;
+        }
+
+        .art-box {
+            width: 100%; height: 200px; background: #eee;
+            border: 1px solid #2a1d35; margin: 10px 0;
+            overflow: hidden; position: relative;
+        }
+        .art-img {
+            width: 100%; height: 100%; background-size: cover;
+            background-position: center; transition: opacity 0.3s;
+        }
+        
+        .bili-tag {
+            color: #d4af37; font-weight: bold; background: #2a1d35;
+            padding: 2px 8px; display: inline-block; margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .hint {
+            position: fixed; bottom: 20px; color: rgba(212, 175, 55, 0.4);
+            font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula-bg"></div>
+    <div class="dust"></div>
+
+    <div class="crystal-container">
+        <div class="crystal-ball"></div>
+        <div class="crystal-base"></div>
+    </div>
+
+    <div class="cards-layout">
+
+        <div class="card-wrapper" onclick="flipCard(this, 'fate')">
+            <div class="face back">
+                <div class="totem"><div class="totem-symbol">✦</div></div>
+            </div>
+            <div class="face front">
+                <div class="front-frame">
+                    <div class="ornament tl"></div><div class="ornament tr"></div>
+                    <div class="ornament bl"></div><div class="ornament br"></div>
+                    
+                    <h2>命运之轮</h2>
+                    <p style="font-size: 13px; color: #666; font-style: italic;">“心中的困惑，在此显现”</p>
+                    
+                    <div class="result-text" id="fate-text">?</div>
+                    
+                    <button class="magic-btn" onclick="askDestiny(event)">揭示指引</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper" onclick="flipCard(this, 'art')">
+            <div class="face back">
+                <div class="totem"><div class="totem-symbol">👁</div></div>
+            </div>
+            <div class="face front">
+                <div class="front-frame">
+                    <div class="ornament tl"></div><div class="ornament tr"></div>
+                    <div class="ornament bl"></div><div class="ornament br"></div>
+
+                    <h2>异界之窗</h2>
+                    <div class="art-box">
+                        <div class="art-img" id="art-img" style="background-image: url('https://img.paulzzh.com/touhou/random');"></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <p style="font-size: 14px; margin: 5px 0;">"凝视深渊..."</p>
+                        <small style="color: #999; font-size: 12px;">翻面自动刷新观测</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper" onclick="flipCard(this, 'bili')">
+            <div class="face back">
+                <div class="totem"><div class="totem-symbol">⚓</div></div>
+            </div>
+            <div class="face front">
+                <div class="front-frame">
+                    <div class="ornament tl"></div><div class="ornament tr"></div>
+                    <div class="ornament bl"></div><div class="ornament br"></div>
+
+                    <h2>时空回廊</h2>
+                    <div class="art-box" style="height: 180px;">
+                        <div class="art-img" id="bili-img" style="background-image: url('https://i0.hdslb.com/bfs/archive/48d0df73c24296dc404f05788d75249764516147.jpg');"></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="bili-tag">正在追番</div>
+                        <div id="bili-title" style="font-weight: bold; color: #2a1d35; min-height: 20px;">点击卡片连接...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="hint">点击卡片翻面刷新 · 点击按钮进行占卜</div>
+
+    <script>
+        // ==================== 1. 翻牌逻辑 ====================
+        function flipCard(card, type) {
+            const isFlipped = card.classList.contains('flipped');
+            if (isFlipped) {
+                card.classList.remove('flipped');
+                setTimeout(() => { refreshData(type); }, 600);
+            } else {
+                card.classList.add('flipped');
+                // 第一次翻开B站卡片时触发一次加载
+                if (type === 'bili' && document.getElementById('bili-title').innerText.includes('点击')) {
+                    refreshData(type);
+                }
+            }
+        }
+
+        // ==================== 2. 数据处理中心 ====================
+        async function refreshData(type) {
+            const ts = new Date().getTime();
+
+            if (type === 'art') {
+                document.getElementById('art-img').style.backgroundImage = `url('https://img.paulzzh.com/touhou/random?t=${ts}')`;
+            } 
+            else if (type === 'fate') {
+                const fateText = document.getElementById('fate-text');
+                fateText.innerText = "?";
+                fateText.style.color = "#8b0000";
+            }
+            else if (type === 'bili') {
+                // ==============================
+                // 你的新 UID 已更新 👇
+                const uid = '407685138'; 
+                // ==============================
+                
+                const rssUrl = `https://rsshub.app/bilibili/user/bangumi/${uid}`;
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+                const titleEl = document.getElementById('bili-title');
+                const imgEl = document.getElementById('bili-img');
+                
+                titleEl.innerText = "星象连接中...";
+
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+
+                    if (data.status === 'ok' && data.items.length > 0) {
+                        // 随机抽取一部追番
+                        const item = data.items[Math.floor(Math.random() * data.items.length)];
+
+                        titleEl.innerText = item.title;
+
+                        // 提取图片
+                        let imgUrl = '';
+                        const regex = /<img src="([^"]+)"/;
+                        const match = item.description.match(regex);
+                        
+                        if (match && match[1]) {
+                            imgUrl = match[1];
+                        } else if (item.thumbnail) {
+                            imgUrl = item.thumbnail;
+                        }
+
+                        if (imgUrl) {
+                            imgEl.style.backgroundImage = `url('${imgUrl}')`;
+                        } else {
+                            // 默认兜底图
+                            imgEl.style.backgroundImage = `url('https://i0.hdslb.com/bfs/archive/48d0df73c24296dc404f05788d75249764516147.jpg')`;
+                        }
+
+                    } else {
+                        // 如果这里报错，99%是因为隐私设置没开
+                        titleEl.innerText = "未观测到追番记录";
+                        console.log("RSS数据为空，请检查B站隐私设置");
+                    }
+                } catch (error) {
+                    console.error("Fetch Error:", error);
+                    titleEl.innerText = "连接中断 (请重试)";
+                }
+            }
+        }
+
+        // ==================== 3. 命运占卜逻辑 ====================
+        const destinyOptions = [
+            "此时行动", "静观其变", "相信直觉", 
+            "大吃一顿", "立刻睡觉", "出门散步", 
+            "复习功课", "重刷番剧", "坚持己见",
+            "联系老友", "整理房间", "放空大脑"
+        ];
+
+        function askDestiny(e) {
+            e.stopPropagation();
+            const textEl = document.getElementById('fate-text');
+            let count = 0;
+            
+            textEl.style.color = "#8b0000"; 
+            textEl.style.transform = "scale(1)";
+
+            const timer = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * destinyOptions.length);
+                textEl.innerText = destinyOptions[randomIndex];
+                count++;
+                
+                if (count >= 15) {
+                    clearInterval(timer);
+                    textEl.style.color = "#d4af37";
+                    textEl.style.transform = "scale(1.2)";
+                    textEl.style.transition = "transform 0.2s";
+                    setTimeout(() => textEl.style.transform = "scale(1)", 200);
+                }
+            }, 50);
+        }
+    </script>
+</body>
+</html>
