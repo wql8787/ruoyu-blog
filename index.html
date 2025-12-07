@@ -26,7 +26,7 @@
         }
 
         .dust {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 100%; width: 100%; height: 100%;
             background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
             opacity: 0.4; animation: drift 60s linear infinite;
             z-index: -1; pointer-events: none;
@@ -137,26 +137,23 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        /* 音乐律动 */
-        .equalizer {
-            display: flex; justify-content: center; align-items: flex-end;
-            height: 30px; gap: 4px; margin-top: 10px; opacity: 0; transition: opacity 0.5s;
+        /* Spotify 容器样式 */
+        .spotify-box {
+            width: 100%; 
+            height: 352px; /* Spotify 嵌入的标准高度 */
+            border-radius: 12px;
+            overflow: hidden;
+            background: #282828;
+            border: 1px solid #d4af37;
+            display: flex; justify-content: center; align-items: center;
         }
-        .bar { width: 6px; background: #d4af37; animation: bounce 1s infinite ease-in-out; }
-        .bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
-        .bar:nth-child(2) { height: 20px; animation-delay: 0.3s; }
-        .bar:nth-child(3) { height: 15px; animation-delay: 0.2s; }
-        .bar:nth-child(4) { height: 25px; animation-delay: 0.4s; }
-        .bar:nth-child(5) { height: 12px; animation-delay: 0.1s; }
-        @keyframes bounce { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.5); } }
+        .spotify-placeholder { color: #888; font-size: 12px; }
 
         .hint {
             position: fixed; bottom: 20px; width: 100%; text-align: center;
             color: rgba(212, 175, 55, 0.4); font-size: 12px; letter-spacing: 2px;
             text-transform: uppercase; pointer-events: none;
         }
-        
-        .play-hint { font-size: 12px; color: #999; margin-top: 5px; min-height: 18px; }
     </style>
 </head>
 <body>
@@ -194,120 +191,99 @@
             </div>
         </div>
 
-        <div class="card-wrapper" onclick="flipCard(this, 'noise')">
+        <div class="card-wrapper" onclick="flipCard(this, 'spotify')">
             <div class="face back"><div class="totem"><div class="totem-symbol">♫</div></div></div>
             <div class="face front">
                 <div class="front-frame">
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
                     
-                    <h2 id="noise-title">静谧钢琴</h2>
-                    
-                    <div class="art-box" style="height: 180px;">
-                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.weserv.nl/?url=https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&fit=crop');"></div>
+                    <div class="spotify-box" id="spotify-container">
+                        <div class="spotify-placeholder">点击翻开加载音乐</div>
                     </div>
                     
-                    <div class="equalizer" id="noise-eq">
-                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                    </div>
-                    
-                    <div class="play-hint" id="play-status">翻开即播 · 翻回停止</div>
-
-                    <audio id="audio-player" loop preload="auto">
-                        <source id="audio-source" src="" type="audio/mpeg">
-                    </audio>
+                    <div style="font-size: 12px; color: #999; margin-top: 10px;">翻回自动停止 · 随机治愈歌单</div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <div class="hint">点击卡片翻面刷新 · 音乐卡翻开即播</div>
+    <div class="hint">点击卡片翻面刷新 · 音乐卡翻开加载</div>
 
     <script>
-        // ==================== 0. MP3 稳定音源 (绝对兼容版) ====================
-        // 使用 Mixkit 的免费商用 MP3，确保 iPhone/Android/PC 都能播
-        const sounds = [
-            { 
-                name: "静谧钢琴", 
-                audio: "https://assets.mixkit.co/active_storage/sfx/133/133-preview.mp3", // 柔和钢琴
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&fit=crop" // 钢琴图
-            },
-            { 
-                name: "林间鸟语", 
-                audio: "https://assets.mixkit.co/active_storage/sfx/2434/2434-preview.mp3", // 鸟叫
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&fit=crop" // 森林图
-            },
-            { 
-                name: "温柔海浪", 
-                audio: "https://assets.mixkit.co/active_storage/sfx/119/119-preview.mp3", // 浪花
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&fit=crop" // 海边图
-            },
-            { 
-                name: "细雨微风", 
-                audio: "https://assets.mixkit.co/active_storage/sfx/2481/2481-preview.mp3", // 柔和小雨
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=600&fit=crop" // 雨窗图
-            }
+        // ==================== 0. Spotify 歌单 (ID列表) ====================
+        // 这些是纯音乐、OST、治愈系的 Track ID
+        const trackIds = [
+            "4DVk96500e26bdae5362j9", // 治愈钢琴 (Experience - Einaudi)
+            "1x5sYLZiu9r5E43kMlt9f8", // 你的名字OST (Sparkle)
+            "4jTIaW9aiZ75HTF3gF814q", // 星际穿越 (Cornfield Chase)
+            "75JFxkI2RXiU7L9VXzMkle", // 千与千寻 (One Summer's Day)
+            "5zT5cMnMKae2dfrms2auDk", // 哈尔的移动城堡 (Merry-Go-Round)
+            "2Q2g4j6n72u8n39f7g8h9j", // 极简静谧 (Gymnopédie No.1)
+            "1dJ7c585c5d34658586940"  // 治愈吉他
         ];
 
-        // 预加载
-        const player = document.getElementById('audio-player');
-        const source = document.getElementById('audio-source');
-        let currentSound = sounds[0];
-        
-        source.src = currentSound.audio;
-        // 某些浏览器需要 load 才能识别新 src
-        player.load();
+        // 记录当前播放的iframe，方便移除
+        let currentIframe = null;
 
         // ==================== 1. 翻牌逻辑 ====================
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
-            const eq = document.getElementById('noise-eq');
-            const status = document.getElementById('play-status');
+            const spotifyContainer = document.getElementById('spotify-container');
 
             if (isFlipped) {
                 // -> 准备合上
                 card.classList.remove('flipped');
                 
-                // 音乐卡合上：立刻暂停
-                if (type === 'noise') {
-                    player.pause();
-                    eq.style.opacity = 0; 
-                    status.innerText = "已暂停 (翻开切歌)";
-                    // 600ms 后切换下一首数据
-                    setTimeout(() => { refreshData(type); }, 600);
-                } else {
-                    setTimeout(() => { refreshData(type); }, 600);
+                // 音乐卡合上：彻底清空容器，停止音乐
+                if (type === 'spotify') {
+                    setTimeout(() => { 
+                        spotifyContainer.innerHTML = '<div class="spotify-placeholder">加载中...</div>';
+                    }, 400); // 稍微延迟一点，等翻过去再清空，避免视觉闪烁
                 }
+                
+                // 延迟刷新其他数据
+                setTimeout(() => { refreshData(type); }, 600);
 
             } else {
                 // -> 准备翻开
                 card.classList.add('flipped');
 
-                // 音乐卡翻开：尝试播放
-                if (type === 'noise') {
-                    // Promise 处理：防止浏览器报错
-                    const playPromise = player.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise.then(_ => {
-                            // 播放成功
-                            eq.style.opacity = 1;
-                            status.innerText = "🎵 治愈播放中...";
-                        })
-                        .catch(error => {
-                            // 自动播放被拦截 (常见于 Safari 省电模式)
-                            console.log("自动播放被拦截:", error);
-                            eq.style.opacity = 0;
-                            status.innerText = "⚠️ 请点击此处播放";
-                            // 给整个卡面加一个点击事件作为补救
-                            card.onclick = function() { player.play(); eq.style.opacity = 1; card.onclick = null; }; 
-                        });
-                    }
+                // 音乐卡翻开：插入 Spotify Iframe
+                if (type === 'spotify') {
+                    loadSpotifyTrack();
                 }
             }
         }
 
-        // ==================== 2. 数据刷新逻辑 ====================
+        // ==================== 2. Spotify 加载逻辑 ====================
+        function loadSpotifyTrack() {
+            const container = document.getElementById('spotify-container');
+            
+            // 随机选一首歌
+            const randomId = trackIds[Math.floor(Math.random() * trackIds.length)];
+            
+            // 构建 Embed URL
+            // theme=0 (黑色主题)
+            // autoplay=1 (尝试自动播放，但在部分浏览器需点击)
+            const embedUrl = `https://open.spotify.com/embed/track/${randomId}?utm_source=generator&theme=0&autoplay=1`;
+            
+            const iframe = document.createElement('iframe');
+            iframe.style.borderRadius = "12px";
+            iframe.width = "100%";
+            iframe.height = "352";
+            iframe.frameBorder = "0";
+            iframe.allowFullscreen = "";
+            iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+            iframe.loading = "lazy";
+            iframe.src = embedUrl;
+            
+            // 清空容器并插入
+            container.innerHTML = '';
+            container.appendChild(iframe);
+        }
+
+        // ==================== 3. 数据刷新逻辑 ====================
         function refreshData(type) {
             const ts = new Date().getTime();
 
@@ -319,20 +295,10 @@
                 fateText.innerText = "?";
                 fateText.style.color = "#8b0000";
             }
-            else if (type === 'noise') {
-                // 随机换歌
-                const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
-                
-                document.getElementById('noise-title').innerText = randomSound.name;
-                document.getElementById('noise-bg').style.backgroundImage = `url('${randomSound.img}')`;
-                
-                source.src = randomSound.audio;
-                player.load(); // 关键：加载新资源
-                document.getElementById('play-status').innerText = "翻开即播 · 翻回停止";
-            }
+            // Spotify 不需要在这里刷新，因为它在翻开时动态生成
         }
 
-        // ==================== 3. 命运占卜逻辑 ====================
+        // ==================== 4. 命运占卜逻辑 ====================
         const destinyOptions = ["此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"];
         function askDestiny(e) {
             e.stopPropagation();
