@@ -136,27 +136,53 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        /* === 像素篝火模块专属样式 === */
-        /* 像素字体 */
-        .pixel-font {
-            font-family: 'VT323', monospace, sans-serif; color: #d4af37;
+        /* === 纯代码像素篝火 (CSS Fire) === */
+        .css-fire-wrapper {
+            background: #1a1a1a;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+            width: 100%; height: 100%;
         }
-        /* 篝火GIF容器，背景设为黑色以融入像素风 */
-        .fire-container {
-            background-color: #1a1a1a; display: flex; justify-content: center; align-items: flex-end;
+        
+        .fire-source {
+            position: relative;
+            width: 10px; height: 10px;
+            background: transparent;
+            margin-top: 40px;
         }
-        /* 浮动文字动画 */
+
+        /* 使用 box-shadow 绘制像素火 */
+        .pixel-flame {
+            width: 10px; height: 10px;
+            background: #ff4500;
+            position: absolute;
+            box-shadow: 
+                0 -10px 0 #ff4500, 10px -10px 0 #ff4500, -10px -10px 0 #ff4500,
+                0 -20px 0 #ff8c00, 10px -20px 0 #ff8c00, -10px -20px 0 #ff8c00,
+                0 -30px 0 #ffd700;
+            animation: flicker 0.5s infinite alternate;
+        }
+        
+        .logs {
+            width: 40px; height: 10px; background: #8B4513;
+            margin-top: 5px;
+            box-shadow: 10px 0 0 #5e2f0d, -10px 0 0 #5e2f0d;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.1) translateY(-2px); opacity: 1; }
+        }
+
+        /* 浮动文字 */
         .float-text {
-            position: absolute; bottom: 40px; width: 100%; text-align: center;
-            font-size: 20px; text-shadow: 2px 2px 0px #000;
-            opacity: 0; animation: floatUp 6s ease-in-out infinite;
-            pointer-events: none;
+            font-family: 'VT323', monospace; color: #d4af37; font-size: 24px;
+            margin-top: 30px; text-shadow: 2px 2px 0 #000;
+            animation: floatText 3s ease-in-out infinite;
         }
-        @keyframes floatUp {
-            0% { transform: translateY(10px); opacity: 0; }
-            20% { transform: translateY(0px); opacity: 1; }
-            80% { transform: translateY(-20px); opacity: 1; }
-            100% { transform: translateY(-30px); opacity: 0; }
+        @keyframes floatText {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
 
         .hint {
@@ -209,12 +235,16 @@
                     
                     <h2>旧世余火</h2>
                     
-                    <div class="art-box fire-container" style="height: 220px;">
-                        <div class="art-img" style="background-image: url('https://media.giphy.com/media/3o7aCS5Jo35knfww24/giphy.gif'); background-size: contain; background-repeat: no-repeat;"></div>
-                        <div class="pixel-font float-text" id="fire-text">休息一下吧...</div>
+                    <div class="art-box css-fire-wrapper" style="height: 220px;">
+                        <div class="fire-source">
+                            <div class="pixel-flame"></div>
+                        </div>
+                        <div class="logs"></div>
+                        
+                        <div class="float-text" id="fire-text">休息一下吧...</div>
                     </div>
                     
-                    <div style="font-size: 12px; color: #999; margin-top: 10px;">盯着火焰 · 放空大脑</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 10px;">纯净 · 治愈 · 永恒</div>
                 </div>
             </div>
         </div>
@@ -230,7 +260,6 @@
             if (isFlipped) {
                 // -> 准备合上
                 card.classList.remove('flipped');
-                // 延迟刷新数据
                 setTimeout(() => { refreshData(type); }, 600);
             } else {
                 // -> 准备翻开
@@ -239,7 +268,7 @@
         }
 
         // ==================== 2. 数据刷新逻辑 ====================
-        const fireTexts = ["休息一下吧...", "盯着火焰...", "温暖...", "什么都不用做...", "旧日回忆...", "像素的梦..."];
+        const fireTexts = ["休息一下吧...", "盯着火焰...", "感受温暖...", "什么都不用做...", "旧日回忆...", "像素的梦..."];
 
         function refreshData(type) {
             const ts = new Date().getTime();
@@ -253,7 +282,6 @@
                 fateText.style.color = "#8b0000";
             }
             else if (type === 'fire') {
-                // 刷新篝火的提示文字
                 const randomText = fireTexts[Math.floor(Math.random() * fireTexts.length)];
                 document.getElementById('fire-text').innerText = randomText;
             }
