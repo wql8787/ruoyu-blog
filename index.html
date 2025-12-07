@@ -198,7 +198,7 @@
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
                     <h2>时空回廊</h2>
                     <div class="art-box" style="height: 180px;">
-                        <div class="art-img" id="bili-img" style="background-image: url('https://i0.hdslb.com/bfs/archive/48d0df73c24296dc404f05788d75249764516147.jpg');"></div>
+                        <div class="art-img" id="bili-img" style="background-image: url('https://images.weserv.nl/?url=https://i0.hdslb.com/bfs/archive/48d0df73c24296dc404f05788d75249764516147.jpg');"></div>
                     </div>
                     <div style="text-align: center;">
                         <div class="bili-tag">正在追番</div>
@@ -212,6 +212,15 @@
     <div class="hint">点击卡片翻面刷新 · 点击按钮进行占卜</div>
 
     <script>
+        // === 工具函数：图片代理 ===
+        // 将普通图片链接转换为经过 weserv.nl 代理的链接，破解防盗链
+        function wrapUrl(url) {
+            if (!url) return '';
+            // 剔除 URL 中的 http/https 前缀，防止双重协议头问题（虽weserv支持，但处理一下更稳）
+            // 这里直接使用 weserv 的标准格式
+            return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+        }
+
         // 1. 翻牌逻辑
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
@@ -220,14 +229,13 @@
                 setTimeout(() => { refreshData(type); }, 600);
             } else {
                 card.classList.add('flipped');
-                // 如果是B站卡且内容是初始状态，尝试加载
                 if (type === 'bili' && document.getElementById('bili-title').innerText.includes('点击')) {
                     refreshData(type);
                 }
             }
         }
 
-        // 2. 数据处理中心 (含兜底逻辑)
+        // 2. 数据处理中心
         async function refreshData(type) {
             const ts = new Date().getTime();
 
@@ -247,13 +255,11 @@
                 const titleEl = document.getElementById('bili-title');
                 const imgEl = document.getElementById('bili-img');
                 
-                // 状态1: 尝试联网
                 titleEl.innerText = "正在同步星象...";
 
                 try {
-                    // 设置超时，防止一直在那里转圈
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒没反应就切本地
+                    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5秒超时
 
                     const response = await fetch(apiUrl, { signal: controller.signal });
                     clearTimeout(timeoutId);
@@ -261,7 +267,6 @@
                     const data = await response.json();
 
                     if (data.status === 'ok' && data.items.length > 0) {
-                        // 成功拿到数据！
                         const item = data.items[Math.floor(Math.random() * data.items.length)];
                         titleEl.innerText = item.title;
                         
@@ -271,42 +276,33 @@
                         if (match && match[1]) imgUrl = match[1];
                         else if (item.thumbnail) imgUrl = item.thumbnail;
 
-                        if (imgUrl) imgEl.style.backgroundImage = `url('${imgUrl}')`;
-                        
+                        if (imgUrl) {
+                            // 核心修改：使用 wrapUrl 包裹链接
+                            imgEl.style.backgroundImage = `url('${wrapUrl(imgUrl)}')`;
+                        }
                     } else {
-                        // 连上了但没数据 (可能是隐私设置问题)，启动兜底
                         throw new Error("No Data");
                     }
                 } catch (error) {
-                    // ======================================
-                    // 🚨 兜底模式 (Backup Mode) 🚨
-                    // 如果联网失败，就从下面这个列表里随机选一个假的显示
-                    // ======================================
-                    console.log("联网失败，启用本地模拟数据");
+                    console.log("启动本地兜底，并使用代理图片");
                     
+                    // 兜底数据也加上 wrapUrl，确保百分百不裂图
                     const backups = [
                         { t: "葬送的芙莉莲", i: "https://i0.hdslb.com/bfs/bangumi/image/48d0df73c24296dc404f05788d75249764516147.jpg" },
                         { t: "孤独摇滚!", i: "https://i0.hdslb.com/bfs/bangumi/image/83a734225d8866378ba2233b86088f134850730d.png" },
                         { t: "间谍过家家", i: "https://i0.hdslb.com/bfs/bangumi/image/c85d45d8108a8df03282221b28d7168b4202e89d.png" },
-                        { t: "鬼灭之刃", i: "https://i0.hdslb.com/bfs/bangumi/image/9d44391694f4c929a74a12000a89d7b44766d678.png" },
-                        { t: "电锯人", i: "https://i0.hdslb.com/bfs/bangumi/image/d5475e24345d1656c125d8041c2c478685125345.png" }
+                        { t: "鬼灭之刃", i: "https://i0.hdslb.com/bfs/bangumi/image/9d44391694f4c929a74a12000a89d7b44766d678.png" }
                     ];
                     
                     const fakeItem = backups[Math.floor(Math.random() * backups.length)];
                     titleEl.innerText = fakeItem.t;
-                    imgEl.style.backgroundImage = `url('${fakeItem.i}')`;
-                    
-                    // 可以在这里加个小标记，自己知道是本地数据
-                    // titleEl.innerText += " (本地)"; 
+                    imgEl.style.backgroundImage = `url('${wrapUrl(fakeItem.i)}')`;
                 }
             }
         }
 
-        // 3. 命运占卜逻辑
-        const destinyOptions = [
-            "此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", 
-            "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"
-        ];
+        // 3. 占卜逻辑
+        const destinyOptions = ["此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"];
         function askDestiny(e) {
             e.stopPropagation();
             const textEl = document.getElementById('fate-text');
