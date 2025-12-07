@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <title>命运星盘</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <style>
         /* ==================== 1. 基础环境 ==================== */
         body {
@@ -26,7 +26,7 @@
         }
 
         .dust {
-            position: fixed; top: 0; left: 100%; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
             opacity: 0.4; animation: drift 60s linear infinite;
             z-index: -1; pointer-events: none;
@@ -67,7 +67,6 @@
         .card-wrapper:hover { transform: translateY(-10px); }
         .card-wrapper.flipped { transform: rotateY(180deg); }
         
-        /* 修复背面穿模 */
         .card-wrapper.flipped .back { opacity: 0; transition: opacity 0s linear 0.4s; pointer-events: none; }
         .card-wrapper:not(.flipped) .back { opacity: 1; transition: opacity 0s linear 0s; }
 
@@ -137,17 +136,28 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        /* Spotify 容器样式 */
-        .spotify-box {
-            width: 100%; 
-            height: 352px; /* Spotify 嵌入的标准高度 */
-            border-radius: 12px;
-            overflow: hidden;
-            background: #282828;
-            border: 1px solid #d4af37;
-            display: flex; justify-content: center; align-items: center;
+        /* === 像素篝火模块专属样式 === */
+        /* 像素字体 */
+        .pixel-font {
+            font-family: 'VT323', monospace, sans-serif; color: #d4af37;
         }
-        .spotify-placeholder { color: #888; font-size: 12px; }
+        /* 篝火GIF容器，背景设为黑色以融入像素风 */
+        .fire-container {
+            background-color: #1a1a1a; display: flex; justify-content: center; align-items: flex-end;
+        }
+        /* 浮动文字动画 */
+        .float-text {
+            position: absolute; bottom: 40px; width: 100%; text-align: center;
+            font-size: 20px; text-shadow: 2px 2px 0px #000;
+            opacity: 0; animation: floatUp 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(10px); opacity: 0; }
+            20% { transform: translateY(0px); opacity: 1; }
+            80% { transform: translateY(-20px); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
 
         .hint {
             position: fixed; bottom: 20px; width: 100%; text-align: center;
@@ -191,99 +201,46 @@
             </div>
         </div>
 
-        <div class="card-wrapper" onclick="flipCard(this, 'spotify')">
-            <div class="face back"><div class="totem"><div class="totem-symbol">♫</div></div></div>
+        <div class="card-wrapper" onclick="flipCard(this, 'fire')">
+            <div class="face back"><div class="totem"><div class="totem-symbol">🔥</div></div></div>
             <div class="face front">
                 <div class="front-frame">
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
                     
-                    <div class="spotify-box" id="spotify-container">
-                        <div class="spotify-placeholder">点击翻开加载音乐</div>
+                    <h2>旧世余火</h2>
+                    
+                    <div class="art-box fire-container" style="height: 220px;">
+                        <div class="art-img" style="background-image: url('https://media.giphy.com/media/3o7aCS5Jo35knfww24/giphy.gif'); background-size: contain; background-repeat: no-repeat;"></div>
+                        <div class="pixel-font float-text" id="fire-text">休息一下吧...</div>
                     </div>
                     
-                    <div style="font-size: 12px; color: #999; margin-top: 10px;">翻回自动停止 · 随机治愈歌单</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 10px;">盯着火焰 · 放空大脑</div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <div class="hint">点击卡片翻面刷新 · 音乐卡翻开加载</div>
+    <div class="hint">点击卡片翻面刷新 · 篝火卡纯净发呆</div>
 
     <script>
-        // ==================== 0. Spotify 歌单 (ID列表) ====================
-        // 这些是纯音乐、OST、治愈系的 Track ID
-        const trackIds = [
-            "4DVk96500e26bdae5362j9", // 治愈钢琴 (Experience - Einaudi)
-            "1x5sYLZiu9r5E43kMlt9f8", // 你的名字OST (Sparkle)
-            "4jTIaW9aiZ75HTF3gF814q", // 星际穿越 (Cornfield Chase)
-            "75JFxkI2RXiU7L9VXzMkle", // 千与千寻 (One Summer's Day)
-            "5zT5cMnMKae2dfrms2auDk", // 哈尔的移动城堡 (Merry-Go-Round)
-            "2Q2g4j6n72u8n39f7g8h9j", // 极简静谧 (Gymnopédie No.1)
-            "1dJ7c585c5d34658586940"  // 治愈吉他
-        ];
-
-        // 记录当前播放的iframe，方便移除
-        let currentIframe = null;
-
         // ==================== 1. 翻牌逻辑 ====================
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
-            const spotifyContainer = document.getElementById('spotify-container');
-
             if (isFlipped) {
                 // -> 准备合上
                 card.classList.remove('flipped');
-                
-                // 音乐卡合上：彻底清空容器，停止音乐
-                if (type === 'spotify') {
-                    setTimeout(() => { 
-                        spotifyContainer.innerHTML = '<div class="spotify-placeholder">加载中...</div>';
-                    }, 400); // 稍微延迟一点，等翻过去再清空，避免视觉闪烁
-                }
-                
-                // 延迟刷新其他数据
+                // 延迟刷新数据
                 setTimeout(() => { refreshData(type); }, 600);
-
             } else {
                 // -> 准备翻开
                 card.classList.add('flipped');
-
-                // 音乐卡翻开：插入 Spotify Iframe
-                if (type === 'spotify') {
-                    loadSpotifyTrack();
-                }
             }
         }
 
-        // ==================== 2. Spotify 加载逻辑 ====================
-        function loadSpotifyTrack() {
-            const container = document.getElementById('spotify-container');
-            
-            // 随机选一首歌
-            const randomId = trackIds[Math.floor(Math.random() * trackIds.length)];
-            
-            // 构建 Embed URL
-            // theme=0 (黑色主题)
-            // autoplay=1 (尝试自动播放，但在部分浏览器需点击)
-            const embedUrl = `https://open.spotify.com/embed/track/${randomId}?utm_source=generator&theme=0&autoplay=1`;
-            
-            const iframe = document.createElement('iframe');
-            iframe.style.borderRadius = "12px";
-            iframe.width = "100%";
-            iframe.height = "352";
-            iframe.frameBorder = "0";
-            iframe.allowFullscreen = "";
-            iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-            iframe.loading = "lazy";
-            iframe.src = embedUrl;
-            
-            // 清空容器并插入
-            container.innerHTML = '';
-            container.appendChild(iframe);
-        }
+        // ==================== 2. 数据刷新逻辑 ====================
+        const fireTexts = ["休息一下吧...", "盯着火焰...", "温暖...", "什么都不用做...", "旧日回忆...", "像素的梦..."];
 
-        // ==================== 3. 数据刷新逻辑 ====================
         function refreshData(type) {
             const ts = new Date().getTime();
 
@@ -295,10 +252,14 @@
                 fateText.innerText = "?";
                 fateText.style.color = "#8b0000";
             }
-            // Spotify 不需要在这里刷新，因为它在翻开时动态生成
+            else if (type === 'fire') {
+                // 刷新篝火的提示文字
+                const randomText = fireTexts[Math.floor(Math.random() * fireTexts.length)];
+                document.getElementById('fire-text').innerText = randomText;
+            }
         }
 
-        // ==================== 4. 命运占卜逻辑 ====================
+        // ==================== 3. 命运占卜逻辑 ====================
         const destinyOptions = ["此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"];
         function askDestiny(e) {
             e.stopPropagation();
