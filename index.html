@@ -45,7 +45,6 @@
             position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
             width: 140px; height: 140px; z-index: 0; pointer-events: none;
         }
-        
         .crystal-ball {
             width: 120px; height: 120px; border-radius: 50%;
             background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(138, 43, 226, 0.2) 40%, rgba(20, 0, 40, 0.6) 90%);
@@ -75,7 +74,6 @@
         .card-wrapper:hover { transform: translateY(-10px); }
         .card-wrapper.flipped { transform: rotateY(180deg); }
         
-        /* 修复背面穿模 */
         .card-wrapper.flipped .back { opacity: 0; transition: opacity 0s linear 0.4s; pointer-events: none; }
         .card-wrapper:not(.flipped) .back { opacity: 1; transition: opacity 0s linear 0s; }
 
@@ -127,6 +125,7 @@
             border-bottom: 1px solid #d4af37; padding-bottom: 8px; width: 100%; text-align: center; letter-spacing: 2px;
         }
 
+        /* 按钮与内容样式 */
         .magic-btn {
             margin-top: auto; background: transparent; border: 1px solid #2a1d35; padding: 10px 30px;
             font-family: "Noto Serif SC", serif; font-size: 16px; color: #2a1d35; cursor: pointer;
@@ -145,10 +144,11 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        .bili-tag {
-            color: #d4af37; font-weight: bold; background: #2a1d35; padding: 2px 8px;
-            display: inline-block; margin-bottom: 5px; font-size: 12px;
+        /* 白噪音模块特有样式 */
+        .noise-status {
+            font-size: 14px; margin-top: 10px; color: #666; font-style: italic; min-height: 20px;
         }
+        .play-icon { font-size: 20px; margin-right: 5px; vertical-align: middle; }
 
         .hint {
             position: fixed; bottom: 20px; width: 100%; text-align: center;
@@ -163,6 +163,7 @@
     <div class="crystal-container"><div class="crystal-ball"></div><div class="crystal-base"></div></div>
 
     <div class="cards-layout">
+        
         <div class="card-wrapper" onclick="flipCard(this, 'fate')">
             <div class="face back"><div class="totem"><div class="totem-symbol">✦</div></div></div>
             <div class="face front">
@@ -191,37 +192,57 @@
             </div>
         </div>
 
-        <div class="card-wrapper" onclick="flipCard(this, 'bili')">
-            <div class="face back"><div class="totem"><div class="totem-symbol">⚓</div></div></div>
+        <div class="card-wrapper" onclick="flipCard(this, 'noise')">
+            <div class="face back"><div class="totem"><div class="totem-symbol">♫</div></div></div>
             <div class="face front">
                 <div class="front-frame">
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
-                    <h2>时空回廊</h2>
-                    <div class="art-box" style="height: 180px;">
-                        <div class="art-img" id="bili-img" style="background-image: url('https://images.weserv.nl/?url=https://i0.hdslb.com/bfs/archive/48d0df73c24296dc404f05788d75249764516147.jpg');"></div>
+                    
+                    <h2 id="noise-title">静谧雨夜</h2> <div class="art-box" style="height: 180px;">
+                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=600&auto=format&fit=crop');"></div>
                     </div>
-                    <div style="text-align: center;">
-                        <div class="bili-tag">正在追番</div>
-                        <div id="bili-title" style="font-weight: bold; color: #2a1d35; min-height: 20px;">点击连接观测...</div>
-                    </div>
+                    
+                    <div class="noise-status" id="noise-status">已暂停</div>
+                    
+                    <audio id="audio-player" loop>
+                        <source id="audio-source" src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg" type="audio/ogg">
+                    </audio>
+
+                    <button class="magic-btn" id="play-btn" onclick="toggleSound(event)">
+                        <span class="play-icon">▶</span> 播放 / 暂停
+                    </button>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <div class="hint">点击卡片翻面刷新 · 点击按钮进行占卜</div>
+    <div class="hint">点击卡片翻面刷新 · 点击按钮进行操作</div>
 
     <script>
-        // === 工具函数：图片代理 ===
-        // 将普通图片链接转换为经过 weserv.nl 代理的链接，破解防盗链
-        function wrapUrl(url) {
-            if (!url) return '';
-            // 剔除 URL 中的 http/https 前缀，防止双重协议头问题（虽weserv支持，但处理一下更稳）
-            // 这里直接使用 weserv 的标准格式
-            return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
-        }
+        // ==================== 全局变量 ====================
+        let isPlaying = false;
+        
+        // 白噪音数据源 (Google Sounds 免费商用库)
+        const sounds = [
+            { 
+                name: "暴雨倾盆", 
+                audio: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg", 
+                img: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=600&auto=format&fit=crop" 
+            },
+            { 
+                name: "温暖炉火", 
+                audio: "https://actions.google.com/sounds/v1/ambiences/fireplace_sound.ogg", 
+                img: "https://images.unsplash.com/photo-1542259681-d3d5f50a4f5c?q=80&w=600&auto=format&fit=crop" 
+            },
+            { 
+                name: "夏夜虫鸣", 
+                audio: "https://actions.google.com/sounds/v1/nature/crickets_in_the_night_ambience.ogg", 
+                img: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?q=80&w=600&auto=format&fit=crop" 
+            }
+        ];
 
-        // 1. 翻牌逻辑
+        // ==================== 1. 翻牌逻辑 ====================
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
             if (isFlipped) {
@@ -229,14 +250,11 @@
                 setTimeout(() => { refreshData(type); }, 600);
             } else {
                 card.classList.add('flipped');
-                if (type === 'bili' && document.getElementById('bili-title').innerText.includes('点击')) {
-                    refreshData(type);
-                }
             }
         }
 
-        // 2. 数据处理中心
-        async function refreshData(type) {
+        // ==================== 2. 数据刷新逻辑 ====================
+        function refreshData(type) {
             const ts = new Date().getTime();
 
             if (type === 'art') {
@@ -247,61 +265,48 @@
                 fateText.innerText = "?";
                 fateText.style.color = "#8b0000";
             }
-            else if (type === 'bili') {
-                const uid = '407685138'; 
-                const rssUrl = `https://rsshub.app/bilibili/user/bangumi/${uid}`;
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+            else if (type === 'noise') {
+                // 1. 停止播放 (翻牌切歌)
+                const player = document.getElementById('audio-player');
+                player.pause();
+                isPlaying = false;
+                document.getElementById('play-btn').innerHTML = '<span class="play-icon">▶</span> 播放 / 暂停';
+                document.getElementById('noise-status').innerText = "已切换环境 (点击播放)";
+
+                // 2. 随机切换一个新环境
+                const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
                 
-                const titleEl = document.getElementById('bili-title');
-                const imgEl = document.getElementById('bili-img');
+                // 3. 更新界面
+                document.getElementById('noise-title').innerText = randomSound.name;
+                document.getElementById('noise-bg').style.backgroundImage = `url('${randomSound.img}')`;
                 
-                titleEl.innerText = "正在同步星象...";
-
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5秒超时
-
-                    const response = await fetch(apiUrl, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    
-                    const data = await response.json();
-
-                    if (data.status === 'ok' && data.items.length > 0) {
-                        const item = data.items[Math.floor(Math.random() * data.items.length)];
-                        titleEl.innerText = item.title;
-                        
-                        let imgUrl = '';
-                        const regex = /<img src="([^"]+)"/;
-                        const match = item.description.match(regex);
-                        if (match && match[1]) imgUrl = match[1];
-                        else if (item.thumbnail) imgUrl = item.thumbnail;
-
-                        if (imgUrl) {
-                            // 核心修改：使用 wrapUrl 包裹链接
-                            imgEl.style.backgroundImage = `url('${wrapUrl(imgUrl)}')`;
-                        }
-                    } else {
-                        throw new Error("No Data");
-                    }
-                } catch (error) {
-                    console.log("启动本地兜底，并使用代理图片");
-                    
-                    // 兜底数据也加上 wrapUrl，确保百分百不裂图
-                    const backups = [
-                        { t: "葬送的芙莉莲", i: "https://i0.hdslb.com/bfs/bangumi/image/48d0df73c24296dc404f05788d75249764516147.jpg" },
-                        { t: "孤独摇滚!", i: "https://i0.hdslb.com/bfs/bangumi/image/83a734225d8866378ba2233b86088f134850730d.png" },
-                        { t: "间谍过家家", i: "https://i0.hdslb.com/bfs/bangumi/image/c85d45d8108a8df03282221b28d7168b4202e89d.png" },
-                        { t: "鬼灭之刃", i: "https://i0.hdslb.com/bfs/bangumi/image/9d44391694f4c929a74a12000a89d7b44766d678.png" }
-                    ];
-                    
-                    const fakeItem = backups[Math.floor(Math.random() * backups.length)];
-                    titleEl.innerText = fakeItem.t;
-                    imgEl.style.backgroundImage = `url('${wrapUrl(fakeItem.i)}')`;
-                }
+                // 4. 更新音频源
+                document.getElementById('audio-source').src = randomSound.audio;
+                player.load(); // 重新加载音频
             }
         }
 
-        // 3. 占卜逻辑
+        // ==================== 3. 播放控制逻辑 ====================
+        function toggleSound(e) {
+            e.stopPropagation(); // 防止翻牌
+            
+            const player = document.getElementById('audio-player');
+            const btn = document.getElementById('play-btn');
+            const status = document.getElementById('noise-status');
+
+            if (isPlaying) {
+                player.pause();
+                btn.innerHTML = '<span class="play-icon">▶</span> 播放';
+                status.innerText = "已暂停";
+            } else {
+                player.play();
+                btn.innerHTML = '<span class="play-icon">⏸</span> 暂停';
+                status.innerText = "播放中...";
+            }
+            isPlaying = !isPlaying;
+        }
+
+        // ==================== 4. 命运占卜逻辑 ====================
         const destinyOptions = ["此时行动", "静观其变", "相信直觉", "大吃一顿", "立刻睡觉", "出门散步", "复习功课", "重刷番剧", "坚持己见", "联系老友"];
         function askDestiny(e) {
             e.stopPropagation();
