@@ -67,6 +67,7 @@
         .card-wrapper:hover { transform: translateY(-10px); }
         .card-wrapper.flipped { transform: rotateY(180deg); }
         
+        /* 修复背面穿模 */
         .card-wrapper.flipped .back { opacity: 0; transition: opacity 0s linear 0.4s; pointer-events: none; }
         .card-wrapper:not(.flipped) .back { opacity: 1; transition: opacity 0s linear 0s; }
 
@@ -136,7 +137,7 @@
         }
         .art-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: opacity 0.3s; }
         
-        /* 音乐律动动画 */
+        /* 音乐律动 */
         .equalizer {
             display: flex; justify-content: center; align-items: flex-end;
             height: 30px; gap: 4px; margin-top: 10px; opacity: 0; transition: opacity 0.5s;
@@ -154,6 +155,8 @@
             color: rgba(212, 175, 55, 0.4); font-size: 12px; letter-spacing: 2px;
             text-transform: uppercase; pointer-events: none;
         }
+        
+        .play-hint { font-size: 12px; color: #999; margin-top: 5px; min-height: 18px; }
     </style>
 </head>
 <body>
@@ -197,20 +200,20 @@
                 <div class="front-frame">
                     <div class="ornament tl"></div><div class="ornament tr"></div><div class="ornament bl"></div><div class="ornament br"></div>
                     
-                    <h2 id="noise-title">屋檐细雨</h2>
+                    <h2 id="noise-title">静谧钢琴</h2>
                     
                     <div class="art-box" style="height: 180px;">
-                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.weserv.nl/?url=https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=600&fit=crop');"></div>
+                        <div class="art-img" id="noise-bg" style="background-image: url('https://images.weserv.nl/?url=https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&fit=crop');"></div>
                     </div>
                     
                     <div class="equalizer" id="noise-eq">
                         <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                     </div>
                     
-                    <div style="font-size: 12px; color: #999; margin-top: 5px;">翻开即播 · 治愈心流</div>
+                    <div class="play-hint" id="play-status">翻开即播 · 翻回停止</div>
 
-                    <audio id="audio-player" loop>
-                        <source id="audio-source" src="" type="audio/ogg">
+                    <audio id="audio-player" loop preload="auto">
+                        <source id="audio-source" src="" type="audio/mpeg">
                     </audio>
                 </div>
             </div>
@@ -221,50 +224,45 @@
     <div class="hint">点击卡片翻面刷新 · 音乐卡翻开即播</div>
 
     <script>
-        // ==================== 0. 数据源配置 (绝对稳定版) ====================
+        // ==================== 0. MP3 稳定音源 (绝对兼容版) ====================
+        // 使用 Mixkit 的免费商用 MP3，确保 iPhone/Android/PC 都能播
         const sounds = [
             { 
-                name: "屋檐细雨", 
-                // Google 官方示例音频：非常柔和的雨声，不像暴雨那么吵
-                audio: "https://actions.google.com/sounds/v1/weather/rain_on_roof.ogg", 
-                // Unsplash 指定 ID：带水珠的窗户，非常匹配
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1493314894560-5c412a56c17c?w=600&fit=crop" 
+                name: "静谧钢琴", 
+                audio: "https://assets.mixkit.co/active_storage/sfx/133/133-preview.mp3", // 柔和钢琴
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&fit=crop" // 钢琴图
             },
             { 
-                name: "林间清晨", 
-                // 鸟叫声，很清脆，没有猫叫
-                audio: "https://actions.google.com/sounds/v1/nature/forest_morning.ogg", 
-                // 阳光穿过树林
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&fit=crop" 
+                name: "林间鸟语", 
+                audio: "https://assets.mixkit.co/active_storage/sfx/2434/2434-preview.mp3", // 鸟叫
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&fit=crop" // 森林图
             },
             { 
                 name: "温柔海浪", 
-                // 只有浪花声，没有海鸥叫
-                audio: "https://actions.google.com/sounds/v1/nature/ocean_waves_large_crash.ogg", 
-                // 沙滩海浪
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&fit=crop" 
+                audio: "https://assets.mixkit.co/active_storage/sfx/119/119-preview.mp3", // 浪花
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&fit=crop" // 海边图
             },
             { 
-                name: "山涧流水", 
-                // 只有水流声
-                audio: "https://actions.google.com/sounds/v1/nature/glacier_melt.ogg", 
-                // 小溪流
-                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=600&fit=crop" 
+                name: "细雨微风", 
+                audio: "https://assets.mixkit.co/active_storage/sfx/2481/2481-preview.mp3", // 柔和小雨
+                img: "https://images.weserv.nl/?url=https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=600&fit=crop" // 雨窗图
             }
         ];
 
-        // 预加载第一个音频
-        let currentSound = sounds[0];
+        // 预加载
         const player = document.getElementById('audio-player');
         const source = document.getElementById('audio-source');
+        let currentSound = sounds[0];
         
         source.src = currentSound.audio;
-        player.load(); // 预加载
+        // 某些浏览器需要 load 才能识别新 src
+        player.load();
 
-        // ==================== 1. 翻牌逻辑 (自动播控) ====================
+        // ==================== 1. 翻牌逻辑 ====================
         function flipCard(card, type) {
             const isFlipped = card.classList.contains('flipped');
             const eq = document.getElementById('noise-eq');
+            const status = document.getElementById('play-status');
 
             if (isFlipped) {
                 // -> 准备合上
@@ -274,7 +272,8 @@
                 if (type === 'noise') {
                     player.pause();
                     eq.style.opacity = 0; 
-                    // 600ms 后偷偷切歌
+                    status.innerText = "已暂停 (翻开切歌)";
+                    // 600ms 后切换下一首数据
                     setTimeout(() => { refreshData(type); }, 600);
                 } else {
                     setTimeout(() => { refreshData(type); }, 600);
@@ -286,11 +285,24 @@
 
                 // 音乐卡翻开：尝试播放
                 if (type === 'noise') {
-                    player.play().then(() => {
-                        eq.style.opacity = 1; 
-                    }).catch(e => {
-                        console.log("需用户交互才能播放", e);
-                    });
+                    // Promise 处理：防止浏览器报错
+                    const playPromise = player.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(_ => {
+                            // 播放成功
+                            eq.style.opacity = 1;
+                            status.innerText = "🎵 治愈播放中...";
+                        })
+                        .catch(error => {
+                            // 自动播放被拦截 (常见于 Safari 省电模式)
+                            console.log("自动播放被拦截:", error);
+                            eq.style.opacity = 0;
+                            status.innerText = "⚠️ 请点击此处播放";
+                            // 给整个卡面加一个点击事件作为补救
+                            card.onclick = function() { player.play(); eq.style.opacity = 1; card.onclick = null; }; 
+                        });
+                    }
                 }
             }
         }
@@ -308,15 +320,15 @@
                 fateText.style.color = "#8b0000";
             }
             else if (type === 'noise') {
-                // 随机切歌
+                // 随机换歌
                 const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
                 
                 document.getElementById('noise-title').innerText = randomSound.name;
                 document.getElementById('noise-bg').style.backgroundImage = `url('${randomSound.img}')`;
                 
-                // 更新音频
                 source.src = randomSound.audio;
-                player.load();
+                player.load(); // 关键：加载新资源
+                document.getElementById('play-status').innerText = "翻开即播 · 翻回停止";
             }
         }
 
